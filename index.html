@@ -87,7 +87,7 @@
     <input type="text" id="namesIn" placeholder="e.g. Ravi, Meena" required>
     <div class="msg" id="namesMsg"></div>
 
-    <button type="button" class="sec" id="payBtn" disabled style="margin-top:10px;width:100%">Pay with PayNow</button>
+    <button type="button" class="sec" id="payBtn" disabled style="margin-top:10px;width:100%">Pay with Paylah</button>
 
     <label for="date">Transferred Date</label>
     <input type="date" id="date" required>
@@ -103,10 +103,18 @@
 </div>
 
 <dialog id="payDlg">
-  <h3 style="margin:0 0 4px">PayNow</h3>
+  <h3 style="margin:0 0 4px">Pay with Paylah</h3>
   <div class="muted" id="payInfo"></div>
   <div id="qr"></div>
-  <div class="muted">Scan with your banking app, or pay to <b id="payTo"></b>.<br>Then come back and submit the form.</div>
+  <div class="muted" id="payHelp">Scan with PayLah or any banking app, or pay to <b id="payTo"></b>.<br>Then come back and submit the form.</div>
+  <div id="mobBox" style="display:none;margin-top:10px">
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button type="button" id="copyNo" class="sec">Copy number</button>
+      <button type="button" id="copyAmt" class="sec">Copy amount</button>
+    </div>
+    <button type="button" id="openApp" style="width:100%;margin-top:10px;display:none">Open PayLah app</button>
+    <div class="muted" id="mobMsg" style="margin-top:8px"></div>
+  </div>
   <p><button type="button" id="closeDlg" style="background:var(--muted)">Close</button></p>
 </dialog>
 
@@ -129,6 +137,9 @@ const CFG = {
   // PayNow receiver: type "mobile" (8-digit SG number) or "uen"
   // PayNow ID itself is read per batch from the "Paylay id" column of the MASTER sheet
   PAYNOW: { name: "Organiser", editable: false },
+  // Link used by the "Open PayLah app" button on phones (leave "" to hide the button).
+  // DBS does not publish a documented deep link, so set this only to a link you have tested.
+  PAYLAH_APP_URL: "",
   REFRESH_MS: 30000
 };
 
@@ -286,9 +297,29 @@ $("payBtn").addEventListener("click",()=>{
   $("payInfo").textContent=`S$ ${fmt(amt)} · Ref: ${ref}`;
   $("payTo").textContent=/^\d{8}$/.test(id)?"+65 "+id:id;
   $("qr").innerHTML="";
-  new QRCode($("qr"),{text:paynowPayload(amt,ref,id),width:220,height:220,correctLevel:QRCode.CorrectLevel.M});
+  const isMobileDevice=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&innerWidth<900);
+  const payNo=/^\d{8}$/.test(id)?id:id;
+  if(isMobileDevice){
+    // a phone can't scan its own screen, so skip the QR and offer copy + open-app instead
+    $("qr").style.display="none";
+    $("payHelp").innerHTML=`Pay <b>S$ ${fmt(amt)}</b> to <b>${esc($("payTo").textContent)}</b> in PayLah, then come back and submit the form.`;
+    $("mobBox").style.display="block";
+    $("openApp").style.display=CFG.PAYLAH_APP_URL?"block":"none";
+    $("mobMsg").textContent=CFG.PAYLAH_APP_URL?"":"Open PayLah → Pay/Transfer → PayNow, then paste the number and amount.";
+    $("copyNo").onclick=()=>copyText(payNo,"Number copied");
+    $("copyAmt").onclick=()=>copyText(amt.toFixed(2),"Amount copied");
+    $("openApp").onclick=()=>{location.href=CFG.PAYLAH_APP_URL;};
+  }else{
+    $("qr").style.display="flex";
+    $("mobBox").style.display="none";
+    new QRCode($("qr"),{text:paynowPayload(amt,ref,id),width:220,height:220,correctLevel:QRCode.CorrectLevel.M});
+  }
   $("payDlg").showModal();
 });
+async function copyText(t,msg){
+  try{await navigator.clipboard.writeText(t);$("mobMsg").textContent=msg;}
+  catch(e){$("mobMsg").textContent="Copy failed – "+t;}
+}
 $("closeDlg").addEventListener("click",()=>$("payDlg").close());
 
 /* ============ Submit to Google Form ============ */

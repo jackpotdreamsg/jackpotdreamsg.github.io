@@ -55,7 +55,7 @@
   <div class="card">
     <h2>Active Batches</h2>
     <table>
-      <thead><tr><th>Batch</th><th>Amount / Person</th></tr></thead>
+      <thead><tr><th>Batch No</th><th>Amount / Person</th></tr></thead>
       <tbody id="batches"><tr><td colspan="2" class="muted">Loading…</td></tr></tbody>
     </table>
   </div>
@@ -64,8 +64,8 @@
   <form class="card" id="form" autocomplete="off" novalidate>
     <h2>Payment &amp; Submission</h2>
 
-    <label for="batch">Batch Code</label>
-    <input type="text" id="batch" inputmode="text" placeholder="Enter batch code" required>
+    <label for="batch">Batch No</label>
+    <input type="text" id="batch" inputmode="text" placeholder="Enter batch no" required>
     <div class="msg" id="batchMsg"></div>
 
     <label for="wa">WhatsApp Number (unique ID)</label>
@@ -124,7 +124,7 @@ const CFG = {
     amount:   "entry.2048096547",
     date:     "entry.1190347781",
     tmobile:  "entry.1097018115",
-    batch:    ""   // <-- add a "Batch Code" question to the Google Form and paste its entry.xxxx here
+    batch:    ""   // <-- add a "Batch No" question to the Google Form and paste its entry.xxxx here
   },
   // PayNow receiver: type "mobile" (8-digit SG number) or "uen"
   PAYNOW: { type: "mobile", id: "XXXXXXXX", name: "Organiser", editable: false },
@@ -216,7 +216,7 @@ function validateBatch(){
   const m=$("batchMsg");
   if(!v){m.textContent="";m.className="msg";}
   else if(current){m.textContent=`✓ Valid – S$ ${fmt(current.amt)} per person`;m.className="msg ok";}
-  else{m.textContent="Batch code not found or not active";m.className="msg bad";}
+  else{m.textContent="Batch No not found or not active";m.className="msg bad";}
   recalc();
 }
 function recalc(){
@@ -275,7 +275,7 @@ function paynowPayload(amount,ref){
 $("payBtn").addEventListener("click",()=>{
   const amt=parseFloat($("amount").value)||0;
   if(!amt)return;
-  if(CFG.PAYNOW.id==="XXXXXXXX"){alert("PayNow receiver not configured yet (set CFG.PAYNOW).");return;}
+  if(CFG.PAYNOW.id==="XXXXXXXX"){alert("PayNow is not available yet. Please contact the organiser.");return;}
   $("payInfo").textContent=`S$ ${fmt(amt)} · Ref: ${current.code}`;
   $("payTo").textContent=CFG.PAYNOW.type==="uen"?CFG.PAYNOW.id:"+65 "+CFG.PAYNOW.id;
   $("qr").innerHTML="";

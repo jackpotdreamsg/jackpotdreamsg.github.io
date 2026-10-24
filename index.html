@@ -32,6 +32,7 @@
   button{font:inherit;font-weight:700;padding:11px 16px;border-radius:8px;border:0;cursor:pointer;background:var(--accent);color:#fff}
   button.sec{background:#7a1fa2}
   button:disabled{opacity:.4;cursor:not-allowed}
+  .req{color:var(--bad)}
   .msg{font-size:13px;margin-top:4px;min-height:18px}
   .ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
   .submit{width:100%;margin-top:16px;font-size:17px}
@@ -64,32 +65,32 @@
   <form class="card" id="form" autocomplete="off" novalidate>
     <h2>Payment &amp; Submission</h2>
 
-    <label for="batch">Batch Code</label>
+    <label for="batch">Batch Code <span class="req">*</span></label>
     <input type="text" id="batch" inputmode="text" placeholder="Enter batch code" required>
     <div class="msg" id="batchMsg"></div>
 
-    <label for="wa">WhatsApp Number (unique ID)</label>
+    <label for="wa">WhatsApp Number (unique ID) <span class="req">*</span></label>
     <input type="tel" id="wa" inputmode="numeric" placeholder="8-digit mobile" required>
     <div class="msg" id="waMsg"></div>
 
     <div class="row">
       <div>
-        <label for="persons">Number of Persons</label>
+        <label for="persons">Number of Persons <span class="req">*</span></label>
         <input type="number" id="persons" min="1" step="1" value="1" required>
       </div>
       <div>
-        <label for="amount">Total Amount (S$)</label>
+        <label for="amount">Total Amount (S$) <span class="req">*</span></label>
         <input type="text" id="amount" readonly value="0.00">
       </div>
     </div>
 
-    <label for="names">Name(s) – single or comma separated</label>
+    <label for="names">Name(s) – single or comma separated <span class="req">*</span></label>
     <input type="text" id="namesIn" placeholder="e.g. Ravi, Meena" required>
     <div class="msg" id="namesMsg"></div>
 
     <button type="button" class="sec" id="payBtn" disabled style="margin-top:10px;width:100%">Pay with Paylah</button>
 
-    <label for="date">Transferred Date</label>
+    <label for="date">Transferred Date <span class="req">*</span></label>
     <input type="date" id="date" required>
     <label class="chk"><input type="checkbox" id="today"> Use today's date</label>
 
@@ -97,7 +98,8 @@
     <input type="tel" id="tmobile" inputmode="numeric" placeholder="Mobile number used in PayLah">
     <div class="msg" id="tmMsg"></div>
 
-    <button type="submit" class="submit" id="submitBtn" disabled>Submit</button>
+    <div class="muted" style="margin-top:12px"><span class="req">*</span> Required. Only the Paylah Number is optional.</div>
+    <button type="submit" class="submit" id="submitBtn" disabled style="margin-top:8px">Submit</button>
     <div class="msg" id="result" style="text-align:center"></div>
   </form>
 </div>

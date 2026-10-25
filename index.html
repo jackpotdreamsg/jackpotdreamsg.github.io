@@ -58,6 +58,13 @@
   #qr{display:flex;justify-content:center;margin:12px 0;background:#fff;padding:10px;border-radius:8px}
   .action-btns{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
   .action-btns button{flex:1;font-size:14px;padding:8px 12px}
+
+  /* Success confirmation popup */
+  .tick{width:56px;height:56px;border-radius:50%;background:var(--ok);color:#fff;font-size:32px;line-height:56px;margin:4px auto 10px}
+  .sum{text-align:left;margin:12px 0 4px;border-top:1px solid var(--line)}
+  .sum div{display:flex;justify-content:space-between;gap:12px;padding:6px 2px;border-bottom:1px solid var(--line);font-size:14px}
+  .sum span:first-child{color:var(--muted)}
+  .sum span:last-child{font-weight:600;text-align:right;word-break:break-word}
 </style>
 </head>
 <body>
@@ -150,6 +157,17 @@
 
   <p style="margin-top:14px;margin-bottom:0">
     <button type="button" id="closeDlg" style="background:var(--muted);width:100%">Close</button>
+  </p>
+</dialog>
+
+<!-- SUBMIT SUCCESS DIALOG -->
+<dialog id="okDlg">
+  <div class="tick">✓</div>
+  <h3 style="margin:0 0 4px">Submitted successfully</h3>
+  <div class="muted">Thank you! Your entry will show in the Live Update once verified.</div>
+  <div class="sum" id="okSum"></div>
+  <p style="margin-top:14px;margin-bottom:0">
+    <button type="button" id="okClose" style="width:100%">OK</button>
   </p>
 </dialog>
 
@@ -437,6 +455,7 @@ $("batch").addEventListener("input",validateBatch);
 ["tmobile","persons","namesIn","date"].forEach(id=>$(id).addEventListener("input",id==="persons"?recalc:check));
 
 $("closeDlg").addEventListener("click",()=>$("payDlg").close());
+$("okClose").addEventListener("click",()=>$("okDlg").close());
 
 /* ============ SUBMIT TO GOOGLE FORM ============ */
 $("form").addEventListener("submit",async e=>{
@@ -466,9 +485,19 @@ $("form").addEventListener("submit",async e=>{
       headers:{"Content-Type":"application/x-www-form-urlencoded"},
       body
     });
-    res.textContent="✓ Submitted. Thank you! Your entry will show once verified.";
-    res.className="msg ok";
-    
+    // capture details for the confirmation popup before the form is cleared
+    const summary=[
+      ["Batch", current.code||current.no],
+      ["Name(s)", nameList().join(", ")],
+      ["Persons", String(parseInt($("persons").value))],
+      ["Amount", "S$ "+$("amount").value],
+      ["Date", dt.split("-").reverse().join("/")]
+    ];
+    $("okSum").innerHTML=summary.map(([k,v])=>`<div><span>${k}</span><span>${esc(v)}</span></div>`).join("");
+    res.textContent="";
+    res.className="msg";
+    $("okDlg").showModal();
+
     $("form").reset();
     $("copyWa").checked = false;
     $("copyWaLabel").style.display = "flex";

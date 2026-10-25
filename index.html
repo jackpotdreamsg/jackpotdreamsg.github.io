@@ -372,7 +372,8 @@ function check(){
   const p=parseInt($("persons").value)||0;
   const n=nameList().length;
   const nm=$("namesMsg");
-  if(n&&p&&n!==p){nm.textContent=`${n} name(s) entered for ${p} person(s)`;nm.className="msg warn";}
+  if(!n&&namesTouched){nm.textContent="Please enter at least one name";nm.className="msg bad";}
+  else if(n&&p&&n!==p){nm.textContent=`${n} name(s) entered for ${p} person(s)`;nm.className="msg warn";}
   else nm.textContent="";
 
   updatePaymentLink();
@@ -381,6 +382,8 @@ function check(){
   $("submitBtn").disabled=!(base&&waOK&&tmOK&&n>0&&$("date").value);
 }
 
+let namesTouched=false;   // only show the "enter a name" error after the user has visited the field
+$("namesIn").addEventListener("blur",()=>{namesTouched=true;check();});
 $("batch").addEventListener("input",validateBatch);
 ["wa","tmobile","persons","namesIn","date"].forEach(id=>$(id).addEventListener("input",id==="persons"?recalc:check));
 
@@ -423,6 +426,7 @@ $("form").addEventListener("submit",async e=>{
 
     $("form").reset();
     current=null;
+    namesTouched=false;
     $("batchMsg").textContent="";
     $("date").value=todayStr();
     recalc();

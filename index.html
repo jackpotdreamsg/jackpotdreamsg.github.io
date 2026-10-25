@@ -141,6 +141,15 @@
   </p>
 </dialog>
 
+<!-- SUCCESS DIALOG -->
+<dialog id="okDlg">
+  <h3 style="margin:0 0 6px;color:var(--ok)">✓ Submitted</h3>
+  <div class="muted">Thank you! Your entry will show once verified.</div>
+  <p style="margin-top:14px;margin-bottom:0">
+    <button type="button" id="okClose" style="width:100%">OK</button>
+  </p>
+</dialog>
+
 <script>
 /* ============ CONFIG ============ */
 const CFG = {
@@ -376,6 +385,7 @@ $("batch").addEventListener("input",validateBatch);
 ["wa","tmobile","persons","namesIn","date"].forEach(id=>$(id).addEventListener("input",id==="persons"?recalc:check));
 
 $("closeDlg").addEventListener("click",()=>$("payDlg").close());
+$("okClose").addEventListener("click",()=>$("okDlg").close());
 
 /* ============ SUBMIT TO GOOGLE FORM ============ */
 $("form").addEventListener("submit",async e=>{
@@ -407,9 +417,10 @@ $("form").addEventListener("submit",async e=>{
       headers:{"Content-Type":"application/x-www-form-urlencoded"},
       body
     });
-    res.textContent="✓ Submitted. Thank you! Your entry will show once verified.";
-    res.className="msg ok";
-    
+    res.textContent="";
+    res.className="msg";
+    $("okDlg").showModal();
+
     $("form").reset();
     current=null;
     $("batchMsg").textContent="";

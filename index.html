@@ -22,11 +22,10 @@
   @keyframes blink{0%{opacity:1}50%{opacity:.2}100%{opacity:1}}
   .sum-left{display:flex;align-items:center}
   .total-span{font-weight:700}
-  .total-span .yv{color:var(--ok);font-size:14px;font-weight:600}
+  .total-span .unv{color:var(--warn);font-size:14px}
   ul.names{list-style:none;margin:10px 0 0;padding:0;max-height:200px;overflow:auto;border-top:1px solid var(--line)}
   ul.names li{padding:6px 2px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
   .nv{color:var(--bad);font-size:13px;font-weight:600}
-  .verified-item{color:var(--ok);font-weight:600}
 
   .muted{color:var(--muted);font-size:13px}
   label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
@@ -44,14 +43,6 @@
   .msg{font-size:13px;margin-top:4px;min-height:18px}
   .ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
   
-  /* Input wrapper for right-aligned inside-input action layout */
-  .row>*{min-width:0}
-  .input-with-action { position: relative; }
-  .input-with-action input[type=tel] { padding-right: 88px; }
-  /* label{} above adds margin:12px 0 4px to every label, which pushed this one off-centre, so reset it */
-  .input-with-action .inside-action { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); margin: 0; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; line-height: 1; color: var(--muted); cursor: pointer; user-select: none; background: transparent; padding: 0; white-space: nowrap; }
-  .inside-action input { width: auto; margin: 0; cursor: pointer; }
-
   /* Submit button exact match to input height & vertical alignment */
   .submit{width:100%;font-size:16px;height:43px;display:flex;align-items:center;justify-content:center;margin-top:0}
   
@@ -60,13 +51,6 @@
   #qr{display:flex;justify-content:center;margin:12px 0;background:#fff;padding:10px;border-radius:8px}
   .action-btns{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
   .action-btns button{flex:1;font-size:14px;padding:8px 12px}
-
-  /* Success confirmation popup */
-  .tick{width:56px;height:56px;border-radius:50%;background:var(--ok);color:#fff;font-size:32px;line-height:56px;margin:4px auto 10px}
-  .sum{text-align:left;margin:12px 0 4px;border-top:1px solid var(--line)}
-  .sum div{display:flex;justify-content:space-between;gap:12px;padding:6px 2px;border-bottom:1px solid var(--line);font-size:14px}
-  .sum span:first-child{color:var(--muted)}
-  .sum span:last-child{font-weight:600;text-align:right;word-break:break-word}
 </style>
 </head>
 <body>
@@ -102,7 +86,7 @@
       </div>
       <div>
         <label for="amount">Total Amount (S$) <span class="req">*</span></label>
-        <input type="text" id="amount" readonly value="0">
+        <input type="text" id="amount" readonly value="0.00">
       </div>
     </div>
 
@@ -125,13 +109,8 @@
     <!-- PayLah Number & Submit Button Side-by-Side -->
     <div class="row" style="margin-top:12px">
       <div>
-        <label for="tmobile" style="margin-top:0">PayLah Number <span class="req">*</span></label>
-        <div class="input-with-action">
-          <input type="tel" id="tmobile" inputmode="numeric">
-          <label class="inside-action" id="copyWaLabel" for="copyWa">
-            <input type="checkbox" id="copyWa"> Copy WA#
-          </label>
-        </div>
+        <label for="tmobile" style="margin-top:0">PayLah Number</label>
+        <input type="tel" id="tmobile" inputmode="numeric" placeholder="8-digit mobile">
       </div>
       <div>
         <button type="submit" class="submit" id="submitBtn" disabled>Submit</button>
@@ -162,17 +141,6 @@
   </p>
 </dialog>
 
-<!-- SUBMIT SUCCESS DIALOG -->
-<dialog id="okDlg">
-  <div class="tick">✓</div>
-  <h3 style="margin:0 0 4px">Submitted successfully</h3>
-  <div class="muted">Thank you! Your entry will show in the Live Update once verified.</div>
-  <div class="sum" id="okSum"></div>
-  <p style="margin-top:14px;margin-bottom:0">
-    <button type="button" id="okClose" style="width:100%">OK</button>
-  </p>
-</dialog>
-
 <script>
 /* ============ CONFIG ============ */
 const CFG = {
@@ -193,7 +161,7 @@ const CFG = {
 
 /* ============ HELPERS ============ */
 const $ = id => document.getElementById(id);
-const fmt = n => Number.isInteger(n) ? n.toLocaleString("en-SG") : n.toLocaleString("en-SG",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt = n => n.toLocaleString("en-SG",{minimumFractionDigits:2,maximumFractionDigits:2});
 const num = v => { const n = parseFloat(String(v??"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
 
 function parseCSV(text){
@@ -259,28 +227,18 @@ function sgPaynowPayload(amount, ref, mobileId){
 async function loadFeed(){
   try{
     const rows=await getCSV(CFG.PUBLICFEED_CSV_URL);
-    let total=0, verifiedAmt=0;
+    let total=0, unverified=0;
     const li=[];
     rows.forEach(r=>{
       const name=pick(r,"name","names");
       const amt=num(pick(r,"total amount","amount","total"));
       const ver=pick(r,"verified","verify","status").toUpperCase();
-      
-      const isY = ver === "Y";
-      total += amt;
-      if(isY) verifiedAmt += amt;
-
-      if(name) {
-        if(isY) {
-          li.push(`<li><span class="verified-item">${esc(name)}</span><span class="verified-item">✓</span></li>`);
-        } else {
-          li.push(`<li><span>${esc(name)}</span><span class="nv">(N)</span></li>`);
-        }
-      }
+      const isN = ver.startsWith("N");
+      total+=amt; if(isN) unverified+=amt;
+      if(name) li.push(`<li><span>${esc(name)}</span>${isN?'<span class="nv">(N)</span>':''}</li>`);
     });
-    
-    $("total").innerHTML = `S$ ${fmt(total)} <span class="yv">(Verified: S$ ${fmt(verifiedAmt)})</span>`;
-    $("names").innerHTML = li.join("");
+    $("total").innerHTML=`S$ ${fmt(total)}`+(unverified>0?` <span class="unv">(${fmt(unverified)})</span>`:"");
+    $("names").innerHTML=li.join("");
   }catch(e){}
 }
 
@@ -289,28 +247,14 @@ let batches=[];
 async function loadBatches(){
   try{
     const rows=await getCSV(CFG.MASTER_CSV_URL);
-    batches=rows.map(r=>{
-      const getVal = (...keys) => {
-        for(const k of keys){
-          const foundKey = Object.keys(r).find(h => h.trim().toLowerCase() === k.toLowerCase());
-          if(foundKey !== undefined && r[foundKey] !== "") return r[foundKey];
-        }
-        for(const k of keys){
-          const foundKey = Object.keys(r).find(h => h.trim().toLowerCase().includes(k.toLowerCase()));
-          if(foundKey !== undefined && r[foundKey] !== "") return r[foundKey];
-        }
-        return "";
-      };
-
-      return {
-        no: getVal("batch no", "no"),
-        code: getVal("batch code", "code"),
-        amt: num(getVal("amount per person", "per person", "amount")),
-        pay: getVal("paylay id", "paynow id", "paynow", "paylah").replace(/\s/g,""),
-        link: getVal("paylah link", "paylay link", "payment link", "link"),
-        status: getVal("status")
-      };
-    }).filter(b => (b.code || b.no) && (b.status === "" || b.status.toLowerCase() === "active"));
+    batches=rows.map(r=>({
+      no:(r["batch no"]||"").trim(),
+      code:(r["batch code"]||"").trim(),
+      amt:num(pick(r,"amount per person","per person","amount")),
+      pay:pick(r,"paylay id","paynow id","paynow","paylah").replace(/\s/g,""),
+      link:(r["paylah link"]||r["paylay link"]||r["payment link"]||"").trim(),
+      status:pick(r,"status")
+    })).filter(b=>(b.code||b.no) && b.status.toLowerCase()==="active");
     validateBatch();
   }catch(e){}
 }
@@ -405,40 +349,15 @@ function updatePaymentLink(){
   };
 }
 
-/* Copy WA# Checkbox Handler (Editable After Copying) */
-$("copyWa").addEventListener("change", () => {
-  if ($("copyWa").checked) {
-    $("tmobile").value = $("wa").value;
-    $("copyWaLabel").style.display = "none";
-  }
-  check();
-});
-
-$("tmobile").addEventListener("input", () => {
-  if (!$("tmobile").value) {
-    $("copyWa").checked = false;
-    $("copyWaLabel").style.display = "flex";
-  }
-  check();
-});
-
-$("wa").addEventListener("input", () => {
-  if ($("copyWa").checked) {
-    $("tmobile").value = $("wa").value;
-  }
-  check();
-});
-
 function check(){
   const waVal = normMobile($("wa").value);
   const waOK = validMobile(waVal);
   $("waMsg").textContent=$("wa").value&&!waOK?"Enter a valid 8-digit Singapore number":"";
   $("waMsg").className="msg bad";
 
-  const tmVal = $("tmobile").value.trim();
-  const tmNorm = normMobile(tmVal);
-  const tmOK = tmVal !== "" && validMobile(tmNorm);
-  $("tmMsg").textContent = tmVal && !tmOK ? "Enter a valid 8-digit Singapore number" : "";
+  const tm=$("tmobile").value.trim();
+  const tmOK=!tm||validMobile(normMobile(tm));
+  $("tmMsg").textContent=!tmOK?"Enter a valid 8-digit Singapore number":"";
   $("tmMsg").className="msg bad";
 
   const p=parseInt($("persons").value)||0;
@@ -454,10 +373,9 @@ function check(){
 }
 
 $("batch").addEventListener("input",validateBatch);
-["tmobile","persons","namesIn","date"].forEach(id=>$(id).addEventListener("input",id==="persons"?recalc:check));
+["wa","tmobile","persons","namesIn","date"].forEach(id=>$(id).addEventListener("input",id==="persons"?recalc:check));
 
 $("closeDlg").addEventListener("click",()=>$("payDlg").close());
-$("okClose").addEventListener("click",()=>$("okDlg").close());
 
 /* ============ SUBMIT TO GOOGLE FORM ============ */
 $("form").addEventListener("submit",async e=>{
@@ -465,17 +383,19 @@ $("form").addEventListener("submit",async e=>{
   if($("submitBtn").disabled)return;
 
   const E=CFG.ENTRY, wa=normMobile($("wa").value), tm=normMobile($("tmobile").value);
-  const dt=$("date").value;
+  const dt=$("date").value, [y,m,d]=dt.split("-");
   const body=new URLSearchParams();
 
   body.set(E.whatsapp, wa);
   body.set(E.persons, String(parseInt($("persons").value)));
   body.set(E.names, nameList().join(", "));
   body.set(E.amount, $("amount").value);
-  body.set(E.date, dt);
+  body.set(E.date+"_year", y);
+  body.set(E.date+"_month", String(+m));
+  body.set(E.date+"_day", String(+d));
   body.set("fvv", "1");
   body.set("pageHistory", "0");
-  body.set(E.tmobile, tm);
+  body.set(E.tmobile, tm || wa);
 
   const btn=$("submitBtn"),res=$("result");
   btn.disabled=true;btn.textContent="Submitting…";
@@ -487,22 +407,10 @@ $("form").addEventListener("submit",async e=>{
       headers:{"Content-Type":"application/x-www-form-urlencoded"},
       body
     });
-    // capture details for the confirmation popup before the form is cleared
-    const summary=[
-      ["Batch", current.code||current.no],
-      ["Name(s)", nameList().join(", ")],
-      ["Persons", String(parseInt($("persons").value))],
-      ["Amount", "S$ "+$("amount").value],
-      ["Date", dt.split("-").reverse().join("/")]
-    ];
-    $("okSum").innerHTML=summary.map(([k,v])=>`<div><span>${k}</span><span>${esc(v)}</span></div>`).join("");
-    res.textContent="";
-    res.className="msg";
-    $("okDlg").showModal();
-
+    res.textContent="✓ Submitted. Thank you! Your entry will show once verified.";
+    res.className="msg ok";
+    
     $("form").reset();
-    $("copyWa").checked = false;
-    $("copyWaLabel").style.display = "flex";
     current=null;
     $("batchMsg").textContent="";
     $("date").value=todayStr();
